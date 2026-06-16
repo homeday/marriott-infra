@@ -1,5 +1,6 @@
 locals {
   global_cluster_id = var.create_global_cluster ? "${var.cluster_name}-global" : var.global_cluster_identifier
+  should_create_instances = var.deployment_mode == "provisioned" && var.instance_count > 0
 
   security_group_ingress_cidr_rules = {
     for i, cidr in var.allowed_cidr_blocks : "cidr_${i}" => {
@@ -21,11 +22,11 @@ locals {
     }
   }
 
-  instances = {
+  instances = local.should_create_instances ? {
     for i in range(var.instance_count) : "instance_${i + 1}" => {
       identifier = "${var.cluster_name}-${i + 1}"
     }
-  }
+  } : {}
 }
 
 module "aurora" {
@@ -57,8 +58,9 @@ module "aurora" {
     local.security_group_ingress_sg_rules
   )
 
-  cluster_instance_class = var.instance_class
   instances              = local.instances
+  cluster_instance_class = var.deployment_mode == "provisioned" ? var.instance_class : null
+  serverlessv2_scaling_configuration = var.deployment_mode == "serverless_v2" ? var.serverless_scaling_configuration : null
 
   storage_encrypted = var.storage_encrypted
   kms_key_id        = var.kms_key_id
@@ -67,6 +69,7 @@ module "aurora" {
   preferred_backup_window      = var.is_primary ? var.preferred_backup_window : null
   preferred_maintenance_window = var.preferred_maintenance_window
 
+  create_cloudwatch_log_group = var.create_cloudwatch_log_group
   enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
 
   deletion_protection       = var.deletion_protection

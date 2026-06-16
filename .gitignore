@@ -8,6 +8,7 @@
 
 # Local .terraform directories (provider plugins, modules cache, etc.)
 **/.terraform/*
+**/.terraform.lock.hcl
 application/
 # Terraform state files - NEVER commit these to version control.
 # Use remote backends (S3, GCS, Azure Blob, Terraform Cloud, etc.) instead.
@@ -138,6 +139,10 @@ $RECYCLE.BIN/
 *.temp
 *.bak
 *.backup
+
+# Empty-folder placeholders
+**/.gitkeep
+**/.keep
 
 # tenv / tfenv version manager
 .tenv

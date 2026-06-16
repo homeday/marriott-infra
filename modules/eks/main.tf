@@ -117,30 +117,6 @@ module "eks" {
       configuration_values        = try(var.addons_settings["coredns"].configuration_values, null) != null ? jsonencode(var.addons_settings["coredns"].configuration_values) : null
       timeouts                    = try(var.addons_settings["coredns"].timeouts, {})
     }
-    # aws-ebs-csi-driver = {
-    #   before_compute = false
-    #   addon_version  = try(var.addons_settings["aws-ebs-csi-driver"].addon_version, var.addons_settings["aws-ebs-csi-driver"].version, null)
-    #   pod_identity_association = [{
-    #     role_arn        = module.ebs_csi_pod_identity.iam_role_arn
-    #     service_account = "ebs-csi-controller-sa"
-    #   }]
-    #   resolve_conflicts_on_create = try(var.addons_settings["aws-ebs-csi-driver"].resolve_conflicts_on_create, "OVERWRITE")
-    #   resolve_conflicts_on_update = try(var.addons_settings["aws-ebs-csi-driver"].resolve_conflicts_on_update, "PRESERVE")
-    #   configuration_values        = try(var.addons_settings["aws-ebs-csi-driver"].configuration_values, null) != null ? jsonencode(var.addons_settings["aws-ebs-csi-driver"].configuration_values) : null
-    #   timeouts                    = try(var.addons_settings["aws-ebs-csi-driver"].timeouts, {})
-    # }
-    # aws-load-balancer-controller = {
-    #   before_compute = false
-    #   addon_version  = try(var.addons_settings["aws-load-balancer-controller"].addon_version, var.addons_settings["aws-load-balancer-controller"].version, null)
-    #   pod_identity_association = [{
-    #     role_arn        = module.alb_controller_pod_identity.iam_role_arn
-    #     service_account = "aws-load-balancer-controller"
-    #   }]
-    #   resolve_conflicts_on_create = try(var.addons_settings["aws-load-balancer-controller"].resolve_conflicts_on_create, "OVERWRITE")
-    #   resolve_conflicts_on_update = try(var.addons_settings["aws-load-balancer-controller"].resolve_conflicts_on_update, "PRESERVE")
-    #   configuration_values        = try(var.addons_settings["aws-load-balancer-controller"].configuration_values, null) != null ? jsonencode(var.addons_settings["aws-load-balancer-controller"].configuration_values) : null
-    #   timeouts                    = try(var.addons_settings["aws-load-balancer-controller"].timeouts, {})
-    # }
   }
 
   # EKS Managed Node Groups
@@ -195,8 +171,8 @@ module "eks_blueprints_addons" {
   aws_load_balancer_controller = {
     chart_version   = "3.2.2"
     create_role = false
-    service_account_name = "aws-load-balancer-controller"
-    namespace = "kube-system"
+    service_account_name = try(var.addons_settings["aws-load-balancer-controller"].service_account, "aws-load-balancer-controller")
+    namespace = try(var.addons_settings["aws-load-balancer-controller"].namespace, "kube-system") 
     set = [
       {
         name  = "vpcId"
@@ -204,4 +180,40 @@ module "eks_blueprints_addons" {
       }
     ]
   }
+
+  enable_cert_manager = true
+  cert_manager = {
+    chart_version = "1.20.2"
+    create_role = false
+    service_account_name = try(var.addons_settings["cert-manager"].service_account, "aws-privateca-issuer-sa")
+    namespace = try(var.addons_settings["cert-manager"].namespace, "cert-manager")
+   
+  }
+
+  enable_external_secrets = true
+  external_secrets = {
+    chart_version = "2.4.1"
+    create_role = false
+    service_account_name = try(var.addons_settings["external_secrets"].service_account, "external-secrets-sa")
+    namespace = try(var.addons_settings["external_secrets"].namespace, "external-secrets")
+  }
+
+  enable_ingress_nginx = true
+  ingress_nginx = {
+    chart_version = "4.15.1"
+    create_role = false
+    service_account_name = try(var.addons_settings["ingress_nginx"].service_account, "ingress-nginx-sa")
+    namespace = try(var.addons_settings["ingress_nginx"].namespace, "ingress-nginx")
+    values = [yamlencode({
+      controller = {
+        service = {
+          annotations = {
+            "service.beta.kubernetes.io/aws-load-balancer-scheme" = "internet-facing"
+            "service.beta.kubernetes.io/aws-load-balancer-type"   = "nlb"
+          }
+        }
+      }
+    })]
+  }
+
 }

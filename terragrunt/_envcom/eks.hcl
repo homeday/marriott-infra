@@ -18,14 +18,5 @@ locals {
         desired_size   = 1
       }
     }
-
-    addons_settings = {
-      "eks-pod-identity-agent"      = {}
-      "vpc-cni"                     = {}
-      "kube-proxy"                  = {}
-      "coredns"                     = {}
-      "aws-ebs-csi-driver"          = {}
-      "aws-load-balancer-controller" = {}
-    }
   }
 }

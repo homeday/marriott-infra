@@ -1,4 +1,4 @@
-# Include root configuration
+ # Include root configuration
 include "root" {
   path = find_in_parent_folders("root.hcl")
 }
@@ -9,7 +9,7 @@ locals {
   region_vars = read_terragrunt_config(find_in_parent_folders("region.hcl"))
   rds_common  = read_terragrunt_config("${get_terragrunt_dir()}/../../../_envcom/rds.hcl")
 
-  cluster_name = "aws-rds-dev-use2"
+  cluster_name = "aws-rds-qa-use2"
 }
 
 terraform {
@@ -21,9 +21,8 @@ dependency "vpc" {
 
   mock_outputs = {
     vpc_id           = "vpc-00000000000000000"
-    vpc_cidr_block   = "10.5.0.0/20"
+    vpc_cidr_block   = "10.7.0.0/20"
     database_subnets = ["subnet-00000000000000001", "subnet-00000000000000002"]
-    azs              = ["us-east-2a", "us-east-2b"]
   }
   mock_outputs_allowed_terraform_commands = ["validate", "plan"]
 }
@@ -32,18 +31,16 @@ inputs = merge(
   local.rds_common.locals.rds_common_inputs,
   {
     cluster_name = local.cluster_name
-    instance_count = 1
+
     vpc_id     = dependency.vpc.outputs.vpc_id
     subnet_ids = dependency.vpc.outputs.database_subnets
-    availability_zones = dependency.vpc.outputs.azs
 
     allowed_cidr_blocks = [dependency.vpc.outputs.vpc_cidr_block]
-    
 
     tags = merge(
       try(local.env_vars.locals.account_tags, {}),
       {
-        environment = "dev"
+        environment = "qa"
         component   = "rds"
       }
     )

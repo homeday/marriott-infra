@@ -146,9 +146,9 @@ variable "addons_settings" {
     condition = length(
       setsubtract(
         toset(keys(var.addons_settings)),
-        toset(["vpc-cni", "kube-proxy", "coredns", "eks-pod-identity-agent", "aws-ebs-csi-driver", "aws-load-balancer-controller"])
+        toset(["vpc-cni", "kube-proxy", "coredns", "eks-pod-identity-agent", "aws-ebs-csi-driver", "aws-load-balancer-controller", "cert-manager", "external-secrets"])
       )
     ) == 0
-    error_message = "addons_settings only supports these keys: vpc-cni, kube-proxy, coredns, eks-pod-identity-agent, aws-ebs-csi-driver, aws-load-balancer-controller."
+    error_message = "addons_settings only supports these keys: vpc-cni, kube-proxy, coredns, eks-pod-identity-agent, aws-ebs-csi-driver, aws-load-balancer-controller, cert-manager, external-secrets."
   }
 }

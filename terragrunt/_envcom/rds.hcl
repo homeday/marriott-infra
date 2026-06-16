@@ -1,17 +1,17 @@
 # Shared RDS defaults for all environments
 locals {
   rds_common_inputs = {
-    engine_version = "15.4"
+    engine_version = "18.3"
 
-    is_primary            = true
-    create_global_cluster  = false
+    is_primary                  = true
+    create_global_cluster       = false
     manage_master_user_password = true
 
     database_name = "appdb"
     master_username = "postgres"
 
     instance_class = "db.r6g.large"
-    instance_count = 1
+    instance_count = 2
 
     storage_encrypted = true
     backup_retention_period = 7
@@ -20,7 +20,7 @@ locals {
 
     deletion_protection = false
     apply_immediately   = true
-    skip_final_snapshot = true
+    skip_final_snapshot = false
 
     enabled_cloudwatch_logs_exports = ["postgresql"]
     port                           = 5432

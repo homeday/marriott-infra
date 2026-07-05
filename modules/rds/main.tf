@@ -74,6 +74,12 @@ resource "aws_rds_global_cluster" "this" {
   storage_encrypted = true
 }
 
+data "aws_rds_global_cluster" "main" {
+  count = local.is_primary ? 1 : 0
+  identifier = local.global_cluster_id
+  depends_on = [module.aurora]
+}
+
 module "aurora" {
   source  = "terraform-aws-modules/rds-aurora/aws"
   version = "10.2.0"

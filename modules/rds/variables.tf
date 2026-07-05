@@ -20,6 +20,12 @@ variable "global_cluster_identifier" {
   default     = null
 }
 
+variable "replication_source_identifier" {
+  description = "Existing Aurora cluster identifier to replicate from (required for DR region)"
+  type        = string
+  default     = null
+}
+
 variable "deployment_mode" {
   description = "deployment mode: 'provisioned' or 'serverless_v2'"
   type        = string

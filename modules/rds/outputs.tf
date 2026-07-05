@@ -44,7 +44,7 @@ output "instance_identifiers" {
 }
 
 output "cluster_master_user_secret" {
-  description = "Generated database master user secret when manage_master_user_password is enabled"
+  description = "Generated database master user secret"
   value       = module.aurora.cluster_master_user_secret
   sensitive   = true
 }

@@ -20,10 +20,9 @@ dependency "vpc" {
   config_path = "../vpc"
 
   mock_outputs = {
-    vpc_id           = "vpc-00000000000000000"
-    vpc_cidr_block   = "10.5.0.0/20"
-    database_subnets = ["subnet-00000000000000001", "subnet-00000000000000002"]
-    azs              = ["us-east-2a", "us-east-2b"]
+    vpc_id                     = "vpc-00000000000000000"
+    vpc_cidr_block             = "10.5.0.0/20"
+    database_subnet_group_name = "aws-vpc-2-db-subnet-group"
   }
   mock_outputs_allowed_terraform_commands = ["validate", "plan"]
 }
@@ -31,20 +30,18 @@ dependency "vpc" {
 inputs = merge(
   local.rds_common.locals.rds_common_inputs,
   {
-    cluster_name = local.cluster_name
-    instance_count = 1
-    vpc_id     = dependency.vpc.outputs.vpc_id
-    subnet_ids = dependency.vpc.outputs.database_subnets
-    availability_zones = dependency.vpc.outputs.azs
-
-    allowed_cidr_blocks = [dependency.vpc.outputs.vpc_cidr_block]
-    
-
+    cluster_name         = local.cluster_name
+    instance_count       = 1
+    vpc_id               = dependency.vpc.outputs.vpc_id
+    db_subnet_group_name = dependency.vpc.outputs.database_subnet_group_name
+    availability_zones   = dependency.vpc.outputs.azs
+    allowed_cidr_blocks  = [dependency.vpc.outputs.vpc_cidr_block]
     tags = merge(
       try(local.env_vars.locals.account_tags, {}),
       {
         environment = "dev"
         component   = "rds"
+        role        = "primary"
       }
     )
   }

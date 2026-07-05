@@ -3,25 +3,25 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "is_primary" {
-  description = "Whether this region is the primary cluster for global database"
-  type        = bool
-  default     = true
-}
-
-variable "create_global_cluster" {
-  description = "Create a new Aurora global database identifier in primary region"
-  type        = bool
-  default     = false
+variable "deployment_type" {
+  description = "Type of Aurora deployment in this region"
+  type        = string
+  default     = "standalone"
 
   validation {
-    condition     = !(var.create_global_cluster && !var.is_primary)
-    error_message = "create_global_cluster can only be true when is_primary is true."
+    condition     = contains(["standalone", "global-primary", "global-secondary"], var.deployment_type)
+    error_message = "deployment_type must be one of 'standalone', 'global-primary', or 'global-secondary'."
   }
 }
 
 variable "global_cluster_identifier" {
   description = "Existing global database identifier to join (required for DR region)"
+  type        = string
+  default     = null
+}
+
+variable "replication_source_identifier" {
+  description = "Existing Aurora cluster identifier to replicate from (required for DR region)"
   type        = string
   default     = null
 }
@@ -49,35 +49,6 @@ variable "database_name" {
   default     = "appdb"
 }
 
-variable "master_username" {
-  description = "Master username (primary only)"
-  type        = string
-  default     = "postgres"
-}
-
-variable "master_password" {
-  description = "Master password (only used if manage_master_user_password is false)"
-  type        = string
-  default     = null
-  sensitive   = true
-}
-
-variable "manage_master_user_password" {
-  description = "Use AWS managed master password in Secrets Manager"
-  type        = bool
-  default     = true
-
-  validation {
-    condition     = var.manage_master_user_password || var.master_password != null
-    error_message = "When manage_master_user_password is false, master_password must be provided."
-  }
-
-  validation {
-    condition     = !(var.is_primary && var.create_global_cluster && var.manage_master_user_password)
-    error_message = "For primary global cluster creation in this module, manage_master_user_password must be false and master_password must be provided."
-  }
-}
-
 variable "vpc_id" {
   description = "VPC ID for security group"
   type        = string
@@ -86,6 +57,13 @@ variable "vpc_id" {
 variable "subnet_ids" {
   description = "Database subnet IDs"
   type        = list(string)
+  default     = []
+}
+
+variable "db_subnet_group_name" {
+  description = "Database subnet group name"
+  type        = string
+  default     = ""
 }
 
 variable "allowed_cidr_blocks" {
@@ -114,8 +92,8 @@ variable "instance_class" {
 variable "serverless_scaling_configuration" {
   description = "Configuration for Serverless v2 scaling. Required when deployment_mode = 'serverless_v2'."
   type = object({
-    min_capacity = number
-    max_capacity = number
+    min_capacity             = number
+    max_capacity             = number
     seconds_until_auto_pause = optional(number, 300)
   })
   default = null
@@ -126,7 +104,7 @@ variable "serverless_scaling_configuration" {
   }
 
   validation {
-    condition     = var.serverless_scaling_configuration == null || (
+    condition = var.serverless_scaling_configuration == null || (
       var.serverless_scaling_configuration.min_capacity >= 0.5 &&
       var.serverless_scaling_configuration.max_capacity <= 128 &&
       var.serverless_scaling_configuration.min_capacity <= var.serverless_scaling_configuration.max_capacity
@@ -150,7 +128,7 @@ variable "storage_encrypted" {
 variable "availability_zones" {
   description = "List of availability zones"
   type        = list(string)
-  default =   null
+  default     = null
 }
 
 variable "kms_key_id" {

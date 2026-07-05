@@ -20,16 +20,11 @@ variable "global_cluster_identifier" {
   default     = null
 }
 
-variable "replication_source_identifier" {
-  type    = string
-  default = null
-}
-
 variable "deployment_mode" {
   description = "deployment mode: 'provisioned' or 'serverless_v2'"
   type        = string
   default     = "provisioned"
-
+  
   validation {
     condition     = contains(["provisioned", "serverless_v2"], var.deployment_mode)
     error_message = "deployment_mode must be either 'provisioned' or 'serverless_v2'."

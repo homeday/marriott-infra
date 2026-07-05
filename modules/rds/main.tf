@@ -85,6 +85,7 @@ module "aurora" {
   port           = var.port
 
   is_primary_cluster = local.is_primary
+  enable_http_endpoint      = true
 
   global_cluster_identifier     = local.global_cluster_id
   replication_source_identifier = var.replication_source_identifier

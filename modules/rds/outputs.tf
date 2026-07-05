@@ -8,6 +8,11 @@ output "cluster_arn" {
   value       = module.aurora.cluster_arn
 }
 
+output "global_writer_endpoint" {
+  description = "The global writer endpoint for the Aurora Global Database"
+  value       = try(data.aws_rds_global_cluster.main[0].endpoint, null)
+}
+
 output "cluster_endpoint" {
   description = "Writer endpoint"
   value       = module.aurora.cluster_endpoint

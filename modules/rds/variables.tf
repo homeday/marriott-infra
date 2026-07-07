@@ -3,6 +3,12 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "create" {
+  description = "Whether to create the Aurora cluster"
+  type        = bool
+  default     = true
+}
+
 variable "deployment_type" {
   description = "Type of Aurora deployment in this region"
   type        = string
@@ -24,17 +30,6 @@ variable "replication_source_identifier" {
   description = "Existing Aurora cluster identifier to replicate from (required for DR region)"
   type        = string
   default     = null
-}
-
-variable "deployment_mode" {
-  description = "deployment mode: 'provisioned' or 'serverless_v2'"
-  type        = string
-  default     = "provisioned"
-  
-  validation {
-    condition     = contains(["provisioned", "serverless_v2"], var.deployment_mode)
-    error_message = "deployment_mode must be either 'provisioned' or 'serverless_v2'."
-  }
 }
 
 variable "engine_version" {
@@ -82,15 +77,22 @@ variable "instance_class" {
   description = "Instance class for Aurora instances"
   type        = string
   default     = "db.r6g.large"
-
-  validation {
-    condition     = var.deployment_mode != "provisioned" || var.instance_class != null
-    error_message = "instance_class is required when deployment_mode is 'provisioned'."
-  }
 }
 
-variable "serverless_scaling_configuration" {
-  description = "Configuration for Serverless v2 scaling. Required when deployment_mode = 'serverless_v2'."
+variable "instance_count" {
+  description = "Number of Aurora instances in this region. Available only when custom_instances is empty."
+  type        = number
+  default     = 2
+}
+
+variable "custom_instances" {
+  description = "Custom instance configurations. If provided, overrides generated instances."
+  type        = any
+  default     = {}
+}
+
+variable "serverlessv2_scaling_configuration" {
+  description = "Map of nested attributes with serverless v2 scaling properties."
   type = object({
     min_capacity             = number
     max_capacity             = number
@@ -99,24 +101,24 @@ variable "serverless_scaling_configuration" {
   default = null
 
   validation {
-    condition     = var.deployment_mode != "serverless_v2" || var.serverless_scaling_configuration != null
-    error_message = "serverless_scaling_configuration is required when deployment_mode is 'serverless_v2'."
+    condition     = var.serverlessv2_scaling_configuration != null && var.instance_class == "db.serverless"
+    error_message = "instance_class must be 'db.serverless' when serverlessv2_scaling_configuration is set."
   }
 
   validation {
-    condition = var.serverless_scaling_configuration == null || (
-      var.serverless_scaling_configuration.min_capacity >= 0.5 &&
-      var.serverless_scaling_configuration.max_capacity <= 128 &&
-      var.serverless_scaling_configuration.min_capacity <= var.serverless_scaling_configuration.max_capacity
+    condition = var.serverlessv2_scaling_configuration == null || (
+      var.serverlessv2_scaling_configuration.min_capacity >= 0.5 &&
+      var.serverlessv2_scaling_configuration.max_capacity <= 128 &&
+      var.serverlessv2_scaling_configuration.min_capacity <= var.serverlessv2_scaling_configuration.max_capacity
     )
     error_message = "Serverless scaling: min_capacity must be between 0.5 and 128 ACU, max_capacity between 0.5 and 128 ACU, and min_capacity must be <= max_capacity."
   }
 }
 
-variable "instance_count" {
-  description = "Number of Aurora instances in this region"
-  type        = number
-  default     = 2
+variable "final_snapshot_identifier" {
+  description = "Identifier for the final snapshot when deleting the cluster. If not provided, a default name will be generated."
+  type        = string
+  default     = null
 }
 
 variable "storage_encrypted" {
@@ -185,14 +187,80 @@ variable "enabled_cloudwatch_logs_exports" {
   default     = ["postgresql"]
 }
 
-variable "port" {
-  description = "Aurora PostgreSQL port"
+variable "cluster_monitoring_interval" {
+  description = "Interval, in seconds, between points when Enhanced Monitoring metrics are collected for the DB cluster. To turn off collecting Enhanced Monitoring metrics, specify 0. Valid Values: 0, 1, 5, 10, 15, 30, 60"
   type        = number
-  default     = 5432
+  default     = 0
+}
+
+
+################################################################################
+# Cluster Parameter Group
+################################################################################
+
+variable "cluster_parameter_group_name" {
+  description = "The name of an existing DB cluster parameter group. Required when `cluster_parameter_group` is not provided (`null`)"
+  type        = string
+  default     = null
+}
+
+variable "cluster_parameter_group" {
+  description = "Map of nested arguments for the created DB cluster parameter group"
+  type = object({
+    name            = optional(string)
+    use_name_prefix = optional(bool, true)
+    description     = optional(string)
+    family          = string
+    parameters = optional(list(object({
+      name         = string
+      value        = string
+      apply_method = optional(string, "immediate")
+    })))
+  })
+  default = null
+}
+
+################################################################################
+# DB Parameter Group
+################################################################################
+
+variable "db_parameter_group" {
+  description = "Map of nested arguments for the created DB parameter group"
+  type = object({
+    name            = optional(string)
+    use_name_prefix = optional(bool, true)
+    description     = optional(string)
+    family          = string
+    parameters = optional(list(object({
+      name         = string
+      value        = string
+      apply_method = optional(string, "immediate")
+    })))
+  })
+  default = null
 }
 
 variable "tags" {
   description = "Common tags"
   type        = map(string)
   default     = {}
+}
+
+variable "ad_user_name" {
+  description = "Active Directory user name to create in the Aurora PostgreSQL database"
+  type        = string
+  default     = null
+}
+
+
+variable "aws_directory_service_id" {
+  description = "AWS Directory Service ID for the Active Directory"
+  type        = string
+  default     = null
+}
+
+variable "ad_user_password" {
+  description = "Active Directory user password to create in the Aurora PostgreSQL database"
+  type        = string
+  default     = null
 }

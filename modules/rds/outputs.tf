@@ -48,8 +48,7 @@ output "instance_identifiers" {
   value       = keys(module.aurora.cluster_instances)
 }
 
-output "cluster_master_user_secret" {
-  description = "Generated database master user secret"
-  value       = module.aurora.cluster_master_user_secret
-  sensitive   = true
+output "cluster_secret_arn" {
+  description = "Generated database master user secret ARN"
+  value       = aws_secretsmanager_secret.db[0].arn
 }
